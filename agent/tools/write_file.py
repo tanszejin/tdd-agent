@@ -11,7 +11,7 @@ class WriteFileTool(Tool):
     """Tool for writing content to a file."""
 
     name = "write_file"
-    description = "Write content to a file at the given path. Creates the file if it doesn't exist, or appends to it if it does."
+    description = "Write content to a file at the given path. Creates the file if it doesn't exist, or overwrites if it does."
 
     def get_schema(self) -> dict:
         return {
@@ -35,8 +35,7 @@ class WriteFileTool(Tool):
             file_path = Path(dir) / path if dir is not None else Path(path)
             # Create parent directories if they don't exist
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            with file_path.open("a", encoding="utf-8") as f:
-                f.write(content)
+            file_path.write_text(content, encoding="utf-8")
             return f"Wrote {len(content)} bytes to {path}"
         except PermissionError:
             return f"Error: Permission denied writing to '{path}'"
