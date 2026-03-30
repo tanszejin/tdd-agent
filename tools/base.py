@@ -43,11 +43,12 @@ class Tool(ABC):
         pass
 
     @abstractmethod
-    def execute(self, **params: Any) -> str:
+    def execute(self, dir: str, **params: Any) -> str:
         """
         Execute the tool with the given parameters.
 
         Args:
+            dir: Directory to execute the command in
             **params: Parameters as defined by get_schema()
 
         Returns:

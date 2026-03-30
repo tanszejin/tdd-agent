@@ -25,9 +25,10 @@ class TDD_Agent:
     4. OBSERVE - Add results to conversation and loop back
     """
 
-    def __init__(self, provider: Provider, tools: list[Tool], transcript_path: str | None = None):
+    def __init__(self, provider: Provider, tools: list[Tool], directory: str | None, transcript_path: str | None = None):
         self.provider = provider
         self.tools = tools
+        self.directory = directory
         self.display = Display(transcript_path=transcript_path)
 
         # Create a lookup dict for quick tool access
@@ -126,7 +127,7 @@ class TDD_Agent:
             return f"Error: Unknown tool '{tool_call.name}'"
 
         try:
-            return tool.execute(**tool_call.parameters)
+            return tool.execute(self.directory, **tool_call.parameters)
         except TypeError as e:
             return f"Error: Invalid parameters for {tool_call.name}: {e}"
         except Exception as e:

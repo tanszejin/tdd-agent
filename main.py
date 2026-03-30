@@ -48,6 +48,10 @@ Examples:
         "--output", "-o",
         help="Save transcript to file (.md for Markdown, .txt for plain text)",
     )
+    parser.add_argument(
+        "--directory", "-d",
+        help="Directory to write scripts and execute commands in (default: parent directory)",
+    )
     args = parser.parse_args()
 
     # Get API key from environment
@@ -80,7 +84,8 @@ Examples:
     # Create and run the agent
     # agent = Agent(provider=provider, tools=tools, transcript_path=args.output)
     # agent = TDD_Agent(provider=provider, tools=tools, transcript_path=args.output)
-    agent = TDD_MultiAgent(test_provider=provider, code_provider=provider, tools=tools, transcript_path=args.output)
+    transcript_path = args.directory + "/" + args.output if args.directory else args.output
+    agent = TDD_MultiAgent(test_provider=provider, code_provider=provider, tools=tools, directory=args.directory, transcript_path=transcript_path)
     agent.run(args.task)
 
 

@@ -25,8 +25,10 @@ class ShellTool(Tool):
             "required": ["command"],
         }
 
-    def execute(self, command: str) -> str:
+    def execute(self, dir: str, command: str) -> str:
         """Execute the shell command and return its output."""
+        if dir is None:
+            dir = "."
         try:
             result = subprocess.run(
                 command,
@@ -34,6 +36,7 @@ class ShellTool(Tool):
                 capture_output=True,
                 text=True,
                 timeout=30,  # 30 second timeout for safety
+                cwd=dir,  
             )
             output = ""
             if result.stdout:

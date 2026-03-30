@@ -29,10 +29,10 @@ class WriteFileTool(Tool):
             "required": ["path", "content"],
         }
 
-    def execute(self, path: str, content: str) -> str:
+    def execute(self, dir: str, path: str, content: str) -> str:
         """Write content to the specified file."""
         try:
-            file_path = Path(path)
+            file_path = Path(dir) / path if dir is not None else Path(path)
             # Create parent directories if they don't exist
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content)

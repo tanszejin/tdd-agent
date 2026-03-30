@@ -25,10 +25,10 @@ class ReadFileTool(Tool):
             "required": ["path"],
         }
 
-    def execute(self, path: str) -> str:
+    def execute(self, dir: str, path: str) -> str:
         """Read and return the contents of the specified file."""
         try:
-            file_path = Path(path)
+            file_path = Path(dir) / path if dir is not None else Path(path)
             if not file_path.exists():
                 return f"Error: File '{path}' does not exist"
             if not file_path.is_file():
