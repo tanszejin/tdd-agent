@@ -12,7 +12,7 @@ Example:
 import argparse
 import os
 import sys
-
+from dotenv import load_dotenv
 from agent import Agent
 from tdd_agent import TDD_Agent
 from tdd_multiagent import TDD_MultiAgent
@@ -55,6 +55,7 @@ Examples:
     args = parser.parse_args()
 
     # Get API key from environment
+    load_dotenv()
     if args.provider == "claude":
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
@@ -82,10 +83,11 @@ Examples:
     ]
 
     # Create and run the agent
-    # agent = Agent(provider=provider, tools=tools, transcript_path=args.output)
+    # agent = Agent(provider=provider, tools=tools, directory=args.directory, transcript_path=args.output)
     # agent = TDD_Agent(provider=provider, tools=tools, transcript_path=args.output)
-    transcript_path = args.directory + "/" + args.output if args.directory else args.output
-    agent = TDD_MultiAgent(test_provider=provider, code_provider=provider, tools=tools, directory=args.directory, transcript_path=transcript_path)
+    # transcript_path = args.directory + "/" + args.output if args.directory else args.output
+    transcript_path = None
+    agent = TDD_MultiAgent(test_provider=provider, code_provider=provider, tools=tools, directory=args.directory, show=True, transcript_path=transcript_path)
     agent.run(args.task)
 
 
