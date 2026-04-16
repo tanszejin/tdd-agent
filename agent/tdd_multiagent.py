@@ -25,12 +25,13 @@ class TDD_MultiAgent:
     4. OBSERVE - Add results to conversation and loop back
     """
 
-    def __init__(self, test_provider: Provider, code_provider: Provider, tools: list[Tool], directory: str | None, transcript_path: str | None = None):
+    def __init__(self, test_provider: Provider, code_provider: Provider, tools: list[Tool], directory: str | None, show = False, transcript_path: str | None = None):
         self.test_provider = test_provider
         self.code_provider = code_provider
         self.tools = tools
         self.directory = directory
         self.display = Display(transcript_path=transcript_path)
+        self.show = show
 
         # Create a lookup dict for quick tool access
         self._tool_map = {tool.name: tool for tool in tools}
@@ -38,7 +39,7 @@ class TDD_MultiAgent:
     def run(self, task: str) -> str:
 
         # Show the task to the user
-        self.display.show_task(task)
+        if self.show: self.display.show_task(task)
 
         # Initialize the conversation with the user's task
         test_messages = [{"role": "system", "content": TEST_SYSTEM_PROMPT}]
@@ -53,19 +54,21 @@ class TDD_MultiAgent:
             # STEP 1: THINK - Ask the LLM what to do next
             # ============================================
             # Show what we're sending to the LLM
-            self.display.show_llm_request(test_messages, self.tools, "Test")
+            if self.show: self.display.show_llm_request(test_messages, self.tools, "Test")
 
-            self.display.show_thinking()
+            if self.show: self.display.show_thinking()
 
             try:
                 response = self.test_provider.chat(test_messages, self.tools)
+                if code_messages[-1]["role"] == "user" and code_messages[-1]["content"] != task:
+                    code_messages.pop()  # Remove the last user message if it was the retry prompt
             except Exception as e:
                 self.display.show_error(f"Test LLM error: {e} \nAttempting to retry...")
                 test_messages.append({
                     "role": "user",
                     "content": f"Error encountered: {e} \nPlease try again."
                 })
-                self.display.hide_thinking()
+                if self.show: self.display.hide_thinking()
                 continue
 
             # try:
@@ -74,10 +77,10 @@ class TDD_MultiAgent:
             #     self.display.show_error(f"Test LLM error: {e}")
             #     return f"Error: {e}"
 
-            self.display.hide_thinking()
+            if self.show: self.display.hide_thinking()
 
             # Show what the LLM returned
-            self.display.show_llm_response(response, "Test")
+            if self.show: self.display.show_llm_response(response, "Test")
 
             # ============================================
             # STEP 2: CHECK - Is the task complete?
@@ -86,7 +89,7 @@ class TDD_MultiAgent:
             if response.is_final:
                 if response.content == "":
                     response.content = "Tests generated successfully"
-                self.display.show_answer(response.content)
+                if self.show: self.display.show_answer(response.content)
                 break
 
             # ============================================
@@ -103,24 +106,24 @@ class TDD_MultiAgent:
                     for tc in response.tool_calls
                 ],
             })
-            code_messages.append({
-                "role": "assistant",
-                "content": response.content,
-                "tool_calls": [
-                    {"id": tc.id, "name": tc.name, "parameters": tc.parameters}
-                    for tc in response.tool_calls
-                ],
-            })
+            # code_messages.append({
+            #     "role": "assistant",
+            #     "content": response.content,
+            #     "tool_calls": [
+            #         {"id": tc.id, "name": tc.name, "parameters": tc.parameters}
+            #         for tc in response.tool_calls
+            #     ],
+            # })
 
 
             # Execute each tool call
             for tool_call in response.tool_calls:
-                self.display.show_tool_call(tool_call)
+                if self.show: self.display.show_tool_call(tool_call)
 
                 # Find and execute the tool
                 result = self._execute_tool(tool_call)
 
-                self.display.show_tool_result(result)
+                if self.show: self.display.show_tool_result(result)
 
                 # ============================================
                 # STEP 4: OBSERVE - Add result to conversation
@@ -142,19 +145,21 @@ class TDD_MultiAgent:
             # STEP 1: THINK - Ask the LLM what to do next
             # ============================================
             # Show what we're sending to the LLM
-            self.display.show_llm_request(code_messages, self.tools, "Code")
+            if self.show: self.display.show_llm_request(code_messages, self.tools, "Code")
 
-            self.display.show_thinking()
+            if self.show: self.display.show_thinking()
 
             try:
                 response = self.code_provider.chat(code_messages, self.tools)
+                if code_messages[-1]["role"] == "user" and code_messages[-1]["content"] != task:
+                    code_messages.pop()  # Remove the last user message if it was the retry prompt
             except Exception as e:
                 self.display.show_error(f"Code LLM error: {e} \nAttempting to retry...")
                 code_messages.append({
                     "role": "user",
                     "content": f"Error encountered: {e} \nPlease try again."
                 })
-                self.display.hide_thinking()
+                if self.show: self.display.hide_thinking()
                 continue
 
             # try:
@@ -163,10 +168,10 @@ class TDD_MultiAgent:
             #     self.display.show_error(f"Code LLM error: {e}")
             #     return f"Error: {e}"
 
-            self.display.hide_thinking()
+            if self.show: self.display.hide_thinking()
 
             # Show what the LLM returned
-            self.display.show_llm_response(response, "Code")
+            if self.show: self.display.show_llm_response(response, "Code")
 
             # ============================================
             # STEP 2: CHECK - Is the task complete?
@@ -175,7 +180,7 @@ class TDD_MultiAgent:
             if response.is_final:
                 if response.content == "":
                     response.content = "Code implemented successfully"
-                self.display.show_answer(response.content)
+                if self.show: self.display.show_answer(response.content)
                 break
 
             # ============================================
@@ -196,12 +201,12 @@ class TDD_MultiAgent:
 
             # Execute each tool call
             for tool_call in response.tool_calls:
-                self.display.show_tool_call(tool_call)
+                if self.show: self.display.show_tool_call(tool_call)
 
                 # Find and execute the tool
                 result = self._execute_tool(tool_call)
 
-                self.display.show_tool_result(result)
+                if self.show: self.display.show_tool_result(result)
 
                 # ============================================
                 # STEP 4: OBSERVE - Add result to conversation
@@ -234,15 +239,16 @@ class TDD_MultiAgent:
 TEST_SYSTEM_PROMPT = """
     You are an expert software engineer practicing Test-Driven Development.
 
-    Create a new test file (e.g., test_module.py for module.py) and write comprehensive Python unit tests BEFORE implementation.
+    Read the test file (e.g., test_module.py for module.py) and ADD comprehensive Python unit tests to the test file. 
+    Create the test file if it does not exist.
+    DO NOT modify existing tests, only add new ones.
+    DO NOT write the implementation.
+    Create a stub if necessary but DO NOT implement it. 
 
     Rules:
-    - Create a new test file for the tests if it does not exist (e.g., test_module.py for module.py).
     - Use pytest.
-    - Only write tests, not the implementation.
     - Import the functions being tested, which should exist in the same directory.
-    - Include edge cases.
-    - Include normal cases.
+    - Include edge cases and normal cases.
     - Ensure tests clearly define expected behaviour.
 
     Write the tests using the provided tools. Do not return code directly.
@@ -251,10 +257,12 @@ TEST_SYSTEM_PROMPT = """
 CODE_SYSTEM_PROMPT = """
     You are an expert Python developer implementing code using Test-Driven Development.
 
-    Your task is to implement code so that ALL provided unit tests pass, including pre-existing ones.
+    A test file already exists (e.g., test_module.py for module.py) with unit tests.
+    Implement code so that ALL provided unit tests pass, including pre-existing ones.
+    A stub should already exist, add or modify it as necessary.
 
     Rules:
-    - Refer to the test file to understand what to implement (e.g., test_module.py for module.py).
+    - Refer to the test file to understand what to implement.
     - Do not modify the tests.
     - Only write the implementation.
     - Run all tests and edit the implementation until all tests pass.

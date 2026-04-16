@@ -39,6 +39,7 @@ class Agent:
         self.tools = tools
         self.directory = directory
         self.display = Display(transcript_path=transcript_path)
+        self.show = False
 
         # Create a lookup dict for quick tool access
         self._tool_map = {tool.name: tool for tool in tools}
@@ -54,7 +55,8 @@ class Agent:
             The agent's final response
         """
         # Show the task to the user
-        self.display.show_task(task)
+        if self.show:
+            self.display.show_task(task)
 
         # Initialize the conversation with the user's task
         messages = [{"role": "user", "content": task}]
@@ -65,9 +67,11 @@ class Agent:
             # STEP 1: THINK - Ask the LLM what to do next
             # ============================================
             # Show what we're sending to the LLM
-            self.display.show_llm_request(messages, self.tools)
+            if self.show:
+                self.display.show_messages(messages)
 
-            self.display.show_thinking()
+            if self.show:
+                self.display.show_thinking()
 
             try:
                 response = self.provider.chat(messages, self.tools)
@@ -75,17 +79,19 @@ class Agent:
                 self.display.show_error(f"LLM error: {e}")
                 return f"Error: {e}"
 
-            self.display.hide_thinking()
+            if self.show:
+                self.display.hide_thinking()
 
             # Show what the LLM returned
-            self.display.show_llm_response(response)
+            if self.show:
+                self.display.show_llm_response(response)
 
             # ============================================
             # STEP 2: CHECK - Is the task complete?
             # ============================================
             # If the LLM didn't request any tool calls, we're done
             if response.is_final:
-                self.display.show_answer(response.content)
+                if self.show: self.display.show_answer(response.content)
                 return response.content
 
             # ============================================
@@ -106,12 +112,14 @@ class Agent:
 
             # Execute each tool call
             for tool_call in response.tool_calls:
-                self.display.show_tool_call(tool_call)
+                if self.show:
+                    self.display.show_tool_call(tool_call)
 
                 # Find and execute the tool
                 result = self._execute_tool(tool_call)
 
-                self.display.show_tool_result(result)
+                if self.show:
+                    self.display.show_tool_result(result)
 
                 # ============================================
                 # STEP 4: OBSERVE - Add result to conversation
