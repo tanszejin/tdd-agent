@@ -26,7 +26,7 @@ class Agent:
     4. OBSERVE - Add results to conversation and loop back
     """
 
-    def __init__(self, provider: Provider, tools: list[Tool], directory: str | None, transcript_path: str | None = None):
+    def __init__(self, provider: Provider, tools: list[Tool], directory: str | None, show=False, transcript_path: str | None = None):
         """
         Initialize the agent.
 
@@ -39,7 +39,7 @@ class Agent:
         self.tools = tools
         self.directory = directory
         self.display = Display(transcript_path=transcript_path)
-        self.show = False
+        self.show = show
 
         # Create a lookup dict for quick tool access
         self._tool_map = {tool.name: tool for tool in tools}
@@ -67,8 +67,7 @@ class Agent:
             # STEP 1: THINK - Ask the LLM what to do next
             # ============================================
             # Show what we're sending to the LLM
-            if self.show:
-                self.display.show_messages(messages)
+            if self.show: self.display.show_llm_request(messages, self.tools)
 
             if self.show:
                 self.display.show_thinking()
